@@ -127,8 +127,36 @@ label.lbl{font-size:11px;color:var(--text2);display:block;margin-bottom:4px}
 
 .toast{position:fixed;bottom:20px;right:20px;background:var(--accent);color:#000;padding:9px 16px;border-radius:var(--radius);font-size:12px;font-weight:600;opacity:0;transition:.2s;pointer-events:none;z-index:999}
 </style>
+<script src="https://unpkg.com/@clerk/clerk-js@5/dist/clerk.browser.js"></script>
 </head>
 <body>
+
+<!-- Clerk auth gate — shown until user is authenticated with a valid role -->
+<div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:#f0efe9;display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+  <div style="width:100%;max-width:360px;padding:2rem;text-align:center">
+    <div style="width:48px;height:48px;border-radius:12px;overflow:hidden;margin:0 auto 1.25rem;background:#1a1a1a;display:flex;align-items:center;justify-content:center">
+      <i class="ti ti-movie" style="font-size:24px;color:#fff"></i>
+    </div>
+    <h1 style="font-size:1.2rem;font-weight:700;margin:0 0 0.25rem;color:#1a1a1a">Director's Cut</h1>
+    <p style="font-size:0.8rem;color:#888;margin:0 0 1.75rem">Kato.8 Studios — Sign in to continue</p>
+    <div id="clerk-sign-in"></div>
+    <div id="clerk-pending" style="display:none">
+      <p style="color:#666;font-size:0.875rem;line-height:1.6;margin-bottom:1.5rem">Your account hasn't been assigned a role yet.<br>A Kato.8 admin will approve your access shortly.</p>
+      <div style="display:flex;gap:0.75rem;justify-content:center">
+        <a href="https://kato8studiosapp.xyz" style="background:#fff;border:1px solid #ddd;color:#555;padding:0.45rem 1.1rem;border-radius:100px;font-size:0.8rem;text-decoration:none">← Central Command</a>
+        <button id="signout-pending" style="background:#fff;border:1px solid #ddd;color:#555;padding:0.45rem 1.1rem;border-radius:100px;cursor:pointer;font-size:0.8rem">Sign out</button>
+      </div>
+    </div>
+    <div id="clerk-restricted" style="display:none">
+      <p style="color:#666;font-size:0.875rem;line-height:1.6;margin-bottom:1.5rem">You don't have access to this tool.<br>Contact a Kato.8 admin if you believe this is an error.</p>
+      <div style="display:flex;gap:0.75rem;justify-content:center">
+        <a href="https://kato8studiosapp.xyz" style="background:#fff;border:1px solid #ddd;color:#555;padding:0.45rem 1.1rem;border-radius:100px;font-size:0.8rem;text-decoration:none">← Central Command</a>
+        <button id="signout-restricted" style="background:#fff;border:1px solid #ddd;color:#555;padding:0.45rem 1.1rem;border-radius:100px;cursor:pointer;font-size:0.8rem">Sign out</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="app">
 
   <div class="topbar">
@@ -363,6 +391,38 @@ if(loc.includes('github.io')){const base=loc.replace('dashboard.html','').replac
 
 renderAll();
 setInterval(renderAll,15000);
+</script>
+<script>
+// ─── Clerk auth ───────────────────────────────────────────────────────────────
+const CLERK_KEY='pk_live_Y2xlcmsua2F0bzhzdHVkaW9zYXBwLnh5eiQ';
+const ALLOWED_ROLES=['super_admin','social_media_manager'];
+
+async function initAuth(){
+  const gate=document.getElementById('auth-gate');
+  try{await window.Clerk.load({publishableKey:CLERK_KEY});}
+  catch(e){gate.style.display='none';return;}
+
+  window.Clerk.mountSignIn(document.getElementById('clerk-sign-in'),{routing:'hash'});
+
+  function showState(state){
+    document.getElementById('clerk-sign-in').style.display=state==='signin'?'block':'none';
+    document.getElementById('clerk-pending').style.display=state==='pending'?'block':'none';
+    document.getElementById('clerk-restricted').style.display=state==='restricted'?'block':'none';
+  }
+  function checkUser(){
+    const user=window.Clerk.user;
+    if(!user){gate.style.display='flex';showState('signin');return;}
+    const role=user.publicMetadata?.role;
+    if(!role){gate.style.display='flex';showState('pending');}
+    else if(!ALLOWED_ROLES.includes(role)){gate.style.display='flex';showState('restricted');}
+    else{gate.style.display='none';}
+  }
+  window.Clerk.addListener(()=>checkUser());
+  checkUser();
+  document.getElementById('signout-pending').addEventListener('click',()=>window.Clerk.signOut());
+  document.getElementById('signout-restricted').addEventListener('click',()=>window.Clerk.signOut());
+}
+initAuth();
 </script>
 </body>
 </html>
