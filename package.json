@@ -1,8 +1,21 @@
 {
   "name": "kato8-video-editor",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
+  "type": "module",
+  "description": "Director's Cut: AI video-production planning for the Kato.8 internal-tools suite.",
   "scripts": {
-    "build": "node build.js"
-  }
+    "build": "node build.js",
+    "dev": "node scripts/dev.mjs",
+    "test": "node --test \"test/*.test.js\"",
+    "lint": "eslint . --ext .js,.mjs"
+  },
+  "dependencies": {
+    "@kato8/core": "github:Terry-Resume/kato8-core#v0.1.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.1",
+    "jsdom": "^25.0.1"
+  },
+  "engines": { "node": ">=20" }
 }

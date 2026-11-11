@@ -126,10 +126,13 @@ label.lbl{font-size:11px;color:var(--text2);display:block;margin-bottom:4px}
 .empty-msg i{font-size:28px;display:block;margin-bottom:8px;opacity:.3}
 
 .toast{position:fixed;bottom:20px;right:20px;background:var(--accent);color:#000;padding:9px 16px;border-radius:var(--radius);font-size:12px;font-weight:600;opacity:0;transition:.2s;pointer-events:none;z-index:999}
+body.locked>*:not(#auth-gate):not(#demo-bar){display:none!important}
 </style>
-<script src="https://unpkg.com/@clerk/clerk-js@5/dist/clerk.browser.js"></script>
+<script src="config.js"></script>
+<!--KATO8:CLERK_SCRIPT-->
+<script src="gate.js" defer></script>
 </head>
-<body>
+<body class="locked">
 
 <!-- Clerk auth gate — shown until user is authenticated with a valid role -->
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:#f0efe9;display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
@@ -140,17 +143,20 @@ label.lbl{font-size:11px;color:var(--text2);display:block;margin-bottom:4px}
     <h1 style="font-size:1.2rem;font-weight:700;margin:0 0 0.25rem;color:#1a1a1a">Director's Cut</h1>
     <p style="font-size:0.8rem;color:#888;margin:0 0 1.75rem">Kato.8 Studios — Sign in to continue</p>
     <div id="clerk-sign-in"></div>
+    <div id="clerk-unavailable" style="display:none">
+      <p style="color:#aaa;font-size:0.875rem;line-height:1.6;margin-bottom:1.5rem">Sign-in is unavailable right now, so access is closed.<br>Reload the page or contact a Kato.8 admin.</p>
+    </div>
     <div id="clerk-pending" style="display:none">
       <p style="color:#666;font-size:0.875rem;line-height:1.6;margin-bottom:1.5rem">Your account hasn't been assigned a role yet.<br>A Kato.8 admin will approve your access shortly.</p>
       <div style="display:flex;gap:0.75rem;justify-content:center">
-        <a href="https://kato8studiosapp.xyz" style="background:#fff;border:1px solid #ddd;color:#555;padding:0.45rem 1.1rem;border-radius:100px;font-size:0.8rem;text-decoration:none">← Central Command</a>
+        <a href="%%HUB_URL%%" style="background:#fff;border:1px solid #ddd;color:#555;padding:0.45rem 1.1rem;border-radius:100px;font-size:0.8rem;text-decoration:none">← Central Command</a>
         <button id="signout-pending" style="background:#fff;border:1px solid #ddd;color:#555;padding:0.45rem 1.1rem;border-radius:100px;cursor:pointer;font-size:0.8rem">Sign out</button>
       </div>
     </div>
     <div id="clerk-restricted" style="display:none">
       <p style="color:#666;font-size:0.875rem;line-height:1.6;margin-bottom:1.5rem">You don't have access to this tool.<br>Contact a Kato.8 admin if you believe this is an error.</p>
       <div style="display:flex;gap:0.75rem;justify-content:center">
-        <a href="https://kato8studiosapp.xyz" style="background:#fff;border:1px solid #ddd;color:#555;padding:0.45rem 1.1rem;border-radius:100px;font-size:0.8rem;text-decoration:none">← Central Command</a>
+        <a href="%%HUB_URL%%" style="background:#fff;border:1px solid #ddd;color:#555;padding:0.45rem 1.1rem;border-radius:100px;font-size:0.8rem;text-decoration:none">← Central Command</a>
         <button id="signout-restricted" style="background:#fff;border:1px solid #ddd;color:#555;padding:0.45rem 1.1rem;border-radius:100px;cursor:pointer;font-size:0.8rem">Sign out</button>
       </div>
     </div>
@@ -231,7 +237,7 @@ label.lbl{font-size:11px;color:var(--text2);display:block;margin-bottom:4px}
   <div class="sec-label">Publish queue</div>
   <div class="data-card" style="margin-bottom:20px">
     <div class="data-header">
-      <span class="data-title">Ready to publish</span>
+      <span class="data-title">Ready to publish (manual checklist)</span>
       <button onclick="clearPub()" style="font-size:11px;color:var(--text3);background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:4px"><i class="ti ti-trash" style="font-size:12px"></i> Clear published</button>
     </div>
     <div id="pub-queue"><div class="empty-msg" style="padding:16px"><i class="ti ti-inbox"></i>No items in queue.<br>Run the editor to queue videos.</div></div>
@@ -257,7 +263,8 @@ const PM={yt:{label:'YouTube'},tt:{label:'TikTok'},ig:{label:'Instagram'}};
 function toast(m){const el=document.getElementById('toast');el.textContent=m;el.style.opacity=1;setTimeout(()=>el.style.opacity=0,2000);}
 function getRuns(){return JSON.parse(localStorage.getItem('dc_runs')||'[]');}
 function getQueue(){return JSON.parse(localStorage.getItem('dc_queue')||'[]');}
-function getTokens(){return JSON.parse(localStorage.getItem('dc_tokens')||'{}');}
+const ESC={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+function E(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>ESC[c]);}
 
 function loadHandles(){
   const h=JSON.parse(localStorage.getItem('dc_handles')||'{}');
@@ -273,7 +280,7 @@ function saveHandles(){
   loadHandles();
 }
 
-function renderStats(runs,queue,tokens){
+function renderStats(runs,queue){
   const t=runs.length;
   const ytC=runs.filter(r=>r.platforms?.includes('yt')).length;
   const ttC=runs.filter(r=>r.platforms?.includes('tt')).length;
@@ -289,10 +296,9 @@ function renderStats(runs,queue,tokens){
   document.getElementById('pm-yt-c').textContent=ytC;document.getElementById('pm-yt-p').textContent=ytP;
   document.getElementById('pm-tt-c').textContent=ttC;document.getElementById('pm-tt-p').textContent=ttP;
   document.getElementById('pm-ig-c').textContent=igC;document.getElementById('pm-ig-p').textContent=igP;
-  const connStatus=(p)=>tokens[p]?`<span style="color:#22c55e">${tokens[p].handle||'Connected'}</span>`:'<span style="color:var(--text3)">Not connected</span>';
-  document.getElementById('pm-yt-conn').innerHTML=connStatus('yt');
-  document.getElementById('pm-tt-conn').innerHTML=connStatus('tt');
-  document.getElementById('pm-ig-conn').innerHTML=connStatus('ig');
+  // Publishing is manual: the studio posts with each platform's own tools and marks items done here.
+  const handles=JSON.parse(localStorage.getItem('dc_handles')||'{}');
+  ['yt','tt','ig'].forEach(p=>{const el=document.getElementById('pm-'+p+'-conn');el.textContent=handles[p]||'Handle not set';el.style.color=handles[p]?'':'var(--text3)';});
 }
 
 function renderChart(runs){
@@ -311,10 +317,10 @@ function renderVideoTable(runs){
   if(!runs.length){el.innerHTML='<div class="empty-msg"><i class="ti ti-video-off"></i>No videos yet.</div>';return;}
   let h='<table class="tbl"><thead><tr><th>Video</th><th>Platforms</th><th>Status</th></tr></thead><tbody>';
   runs.slice(0,12).forEach(r=>{
-    const plats=(r.platforms||[]).map(p=>`<span class="pip ${p}">${PM[p]?.label||p}</span>`).join('');
+    const plats=(r.platforms||[]).map(p=>`<span class="pip ${PM[p]?p:''}">${PM[p]?.label||E(p)}</span>`).join('');
     const sc=r.status==='published'?'st-published':r.status==='ready'?'st-ready':r.status==='editing'?'st-editing':'st-draft';
     const date=new Date(r.timestamp).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    h+=`<tr><td><div class="vid-title">${r.title||'Untitled'}</div><div class="vid-date">${date} · ${r.genre||''}</div></td><td>${plats}</td><td><span class="st ${sc}">${r.status||'draft'}</span></td></tr>`;
+    h+=`<tr><td><div class="vid-title">${E(r.title)||'Untitled'}</div><div class="vid-date">${date} · ${E(r.genre)}</div></td><td>${plats}</td><td><span class="st ${sc}">${E(r.status||'draft')}</span></td></tr>`;
   });
   h+='</tbody></table>';el.innerHTML=h;
 }
@@ -323,44 +329,39 @@ function renderFeed(runs,queue){
   const el=document.getElementById('activity-feed');
   const events=[];
   runs.forEach(r=>{
-    events.push({t:r.timestamp,dot:'sys',txt:`Production run: "${(r.title||'').slice(0,45)}"`,ts:r.timestamp});
+    events.push({t:r.timestamp,dot:'sys',txt:`Production run: "${E((r.title||'').slice(0,45))}"`,ts:r.timestamp});
     (r.platforms||[]).forEach(p=>events.push({t:r.timestamp+10,dot:p,txt:`${PM[p]?.label} export queued`,ts:r.timestamp+10}));
   });
-  queue.filter(q=>q.status==='published').forEach(q=>{events.push({t:q.published_at||q.created,dot:q.platform,txt:`Published to ${PM[q.platform]?.label}: "${(q.title||'').slice(0,35)}"`,ts:q.published_at||q.created});});
+  queue.filter(q=>q.status==='published').forEach(q=>{events.push({t:q.published_at||q.created,dot:q.platform,txt:`Marked published on ${PM[q.platform]?.label}: "${E((q.title||'').slice(0,35))}"`,ts:q.published_at||q.created});});
   if(!events.length){el.innerHTML='<div class="empty-msg" style="padding:16px"><i class="ti ti-list"></i>No activity yet.</div>';return;}
   events.sort((a,b)=>b.t-a.t);
   let h='';events.slice(0,14).forEach(e=>{const ago=timeAgo(e.ts);h+=`<div class="feed-item"><div class="feed-dot ${e.dot}"></div><div class="feed-txt">${e.txt}</div><div class="feed-time">${ago}</div></div>`;});
   el.innerHTML=h;
 }
 
-function renderPubQueue(queue,tokens){
+function renderPubQueue(queue){
   const el=document.getElementById('pub-queue');
   const pending=queue.filter(q=>q.status!=='published');
-  if(!pending.length){el.innerHTML='<div class="empty-msg" style="padding:16px"><i class="ti ti-check"></i>All videos published!</div>';return;}
+  if(!pending.length){el.innerHTML='<div class="empty-msg" style="padding:16px"><i class="ti ti-check"></i>Everything in the queue is marked published.</div>';return;}
   const colors={yt:'background:#ff0000',tt:'background:#111',ig:'background:linear-gradient(135deg,#f09433,#e6683c,#dc2743)'};
   let h='';
   pending.slice(0,8).forEach(q=>{
-    const canPub=!!tokens[q.platform];
     h+=`<div class="pq" id="dq-${q.id}">
       <div class="pq-ico" style="${colors[q.platform]||'background:#333'}"><i class="ti ti-brand-${q.platform==='yt'?'youtube':q.platform==='tt'?'tiktok':'instagram'}" style="color:white;font-size:12px"></i></div>
-      <div class="pq-info"><div class="pq-title">${q.title}</div><div class="pq-meta">${PM[q.platform]?.label} · Queued ${new Date(q.created).toLocaleDateString()}</div></div>
-      ${canPub?`<button class="btn-pub-sm ${q.platform}" onclick="publishFromDash('${q.id}')"><i class="ti ti-upload" style="font-size:10px"></i> Publish</button>`:`<a href="index.html" style="font-size:10px;color:var(--text3);text-decoration:none">Connect →</a>`}
+      <div class="pq-info"><div class="pq-title">${E(q.title)}</div><div class="pq-meta">${PM[q.platform]?.label} · Queued ${new Date(q.created).toLocaleDateString()}</div></div>
+      <button class="btn-pub-sm ${E(q.platform)}" onclick="markPublished('${E(q.id)}')"><i class="ti ti-check" style="font-size:10px"></i> Mark published</button>
     </div>`;
   });
   el.innerHTML=h;
 }
 
-async function publishFromDash(qid){
+function markPublished(qid){
   const queue=getQueue();const q=queue.find(x=>x.id===qid);if(!q)return;
-  const tokens=getTokens();
-  const btn=document.querySelector(`#dq-${qid} .btn-pub-sm`);
-  if(btn){btn.disabled=true;btn.innerHTML='<div class="spinner-s"></div>';}
-  await new Promise(r=>setTimeout(r,2000));
   q.status='published';q.published_at=Date.now();
   const runs=getRuns();const run=runs.find(r=>r.id===q.vid_id);
-  if(run){run.status='published';run['pub_'+q.platform]=Date.now();localStorage.setItem('dc_runs',JSON.stringify(runs));}
+  if(run){run['pub_'+q.platform]=Date.now();if(!queue.some(x=>x.vid_id===run.id&&x.status!=='published'))run.status='published';localStorage.setItem('dc_runs',JSON.stringify(runs));}
   localStorage.setItem('dc_queue',JSON.stringify(queue));
-  toast('Published to '+PM[q.platform]?.label+'!');
+  toast('Marked as published on '+(PM[q.platform]?.label||'the platform'));
   renderAll();
 }
 
@@ -376,13 +377,13 @@ function timeAgo(ts){
 }
 
 function renderAll(){
-  const runs=getRuns();const queue=getQueue();const tokens=getTokens();
+  const runs=getRuns();const queue=getQueue();
   loadHandles();
-  renderStats(runs,queue,tokens);
+  renderStats(runs,queue);
   renderChart(runs);
   renderVideoTable(runs);
   renderFeed(runs,queue);
-  renderPubQueue(queue,tokens);
+  renderPubQueue(queue);
 }
 
 // Update editor link for GitHub Pages
@@ -391,38 +392,6 @@ if(loc.includes('github.io')){const base=loc.replace('dashboard.html','').replac
 
 renderAll();
 setInterval(renderAll,15000);
-</script>
-<script>
-// ─── Clerk auth ───────────────────────────────────────────────────────────────
-const CLERK_KEY='pk_live_Y2xlcmsua2F0bzhzdHVkaW9zYXBwLnh5eiQ';
-const ALLOWED_ROLES=['super_admin','social_media_manager'];
-
-async function initAuth(){
-  const gate=document.getElementById('auth-gate');
-  try{await window.Clerk.load({publishableKey:CLERK_KEY});}
-  catch(e){gate.style.display='none';return;}
-
-  window.Clerk.mountSignIn(document.getElementById('clerk-sign-in'),{routing:'hash'});
-
-  function showState(state){
-    document.getElementById('clerk-sign-in').style.display=state==='signin'?'block':'none';
-    document.getElementById('clerk-pending').style.display=state==='pending'?'block':'none';
-    document.getElementById('clerk-restricted').style.display=state==='restricted'?'block':'none';
-  }
-  function checkUser(){
-    const user=window.Clerk.user;
-    if(!user){gate.style.display='flex';showState('signin');return;}
-    const role=user.publicMetadata?.role;
-    if(!role){gate.style.display='flex';showState('pending');}
-    else if(!ALLOWED_ROLES.includes(role)){gate.style.display='flex';showState('restricted');}
-    else{gate.style.display='none';}
-  }
-  window.Clerk.addListener(()=>checkUser());
-  checkUser();
-  document.getElementById('signout-pending').addEventListener('click',()=>window.Clerk.signOut());
-  document.getElementById('signout-restricted').addEventListener('click',()=>window.Clerk.signOut());
-}
-initAuth();
 </script>
 </body>
 </html>

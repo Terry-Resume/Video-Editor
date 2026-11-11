@@ -147,9 +147,6 @@ select.sel:focus,input.inp:focus{outline:none;border-color:var(--text3)}
 .dl-btn{width:100%;padding:9px;margin-top:10px;background:var(--text);color:var(--bg);border:none;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:opacity .15s}
 .dl-btn:hover{opacity:.8}
 
-.api-notice{background:var(--warn-bg);border:0.5px solid var(--warn-text);border-radius:var(--radius);padding:12px 14px;font-size:12px;color:var(--warn-text);margin-bottom:1.25rem;display:none;line-height:1.5}
-.api-notice a{color:var(--warn-text)}
-.api-notice.show{display:block}
 .copied-toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:var(--bg);padding:10px 18px;border-radius:var(--radius);font-size:13px;font-weight:500;opacity:0;transition:.25s;pointer-events:none;z-index:999}
 .copied-toast.show{opacity:1}
 
@@ -157,10 +154,14 @@ select.sel:focus,input.inp:focus{outline:none;border-color:var(--text3)}
 .metrics-bar{background:var(--info-bg);border-radius:var(--radius);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:1rem;border:0.5px solid var(--border2)}
 .metrics-bar p{font-size:12px;color:var(--info-text);line-height:1.4}
 .metrics-bar button{flex-shrink:0;padding:6px 14px;background:var(--info-text);color:white;border:none;border-radius:var(--radius);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap}
+.honest{background:var(--info-bg);border:0.5px solid var(--border2);color:var(--info-text);border-radius:var(--radius);padding:10px 14px;font-size:12px;line-height:1.5;margin-bottom:1.25rem}
+body.locked>*:not(#auth-gate):not(#demo-bar){display:none!important}
 </style>
-<script src="https://unpkg.com/@clerk/clerk-js@5/dist/clerk.browser.js"></script>
+<script src="config.js"></script>
+<!--KATO8:CLERK_SCRIPT-->
+<script src="gate.js" defer></script>
 </head>
-<body>
+<body class="locked">
 
 <!-- Clerk auth gate — shown until user is authenticated with a valid role -->
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:#f0efe9;display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
@@ -171,17 +172,20 @@ select.sel:focus,input.inp:focus{outline:none;border-color:var(--text3)}
     <h1 style="font-size:1.2rem;font-weight:700;margin:0 0 0.25rem;color:#1a1a1a">Director's Cut</h1>
     <p style="font-size:0.8rem;color:#888;margin:0 0 1.75rem">Kato.8 Studios — Sign in to continue</p>
     <div id="clerk-sign-in"></div>
+    <div id="clerk-unavailable" style="display:none">
+      <p style="color:#666;font-size:0.875rem;line-height:1.6;margin-bottom:1.5rem">Sign-in is unavailable right now, so access is closed.<br>Reload the page or contact a Kato.8 admin.</p>
+    </div>
     <div id="clerk-pending" style="display:none">
       <p style="color:#666;font-size:0.875rem;line-height:1.6;margin-bottom:1.5rem">Your account hasn't been assigned a role yet.<br>A Kato.8 admin will approve your access shortly.</p>
       <div style="display:flex;gap:0.75rem;justify-content:center">
-        <a href="https://kato8studiosapp.xyz" style="background:#fff;border:1px solid #ddd;color:#555;padding:0.45rem 1.1rem;border-radius:100px;font-size:0.8rem;text-decoration:none">← Central Command</a>
+        <a href="%%HUB_URL%%" style="background:#fff;border:1px solid #ddd;color:#555;padding:0.45rem 1.1rem;border-radius:100px;font-size:0.8rem;text-decoration:none">← Central Command</a>
         <button id="signout-pending" style="background:#fff;border:1px solid #ddd;color:#555;padding:0.45rem 1.1rem;border-radius:100px;cursor:pointer;font-size:0.8rem">Sign out</button>
       </div>
     </div>
     <div id="clerk-restricted" style="display:none">
       <p style="color:#666;font-size:0.875rem;line-height:1.6;margin-bottom:1.5rem">You don't have access to this tool.<br>Contact a Kato.8 admin if you believe this is an error.</p>
       <div style="display:flex;gap:0.75rem;justify-content:center">
-        <a href="https://kato8studiosapp.xyz" style="background:#fff;border:1px solid #ddd;color:#555;padding:0.45rem 1.1rem;border-radius:100px;font-size:0.8rem;text-decoration:none">← Central Command</a>
+        <a href="%%HUB_URL%%" style="background:#fff;border:1px solid #ddd;color:#555;padding:0.45rem 1.1rem;border-radius:100px;font-size:0.8rem;text-decoration:none">← Central Command</a>
         <button id="signout-restricted" style="background:#fff;border:1px solid #ddd;color:#555;padding:0.45rem 1.1rem;border-radius:100px;cursor:pointer;font-size:0.8rem">Sign out</button>
       </div>
     </div>
@@ -195,14 +199,10 @@ select.sel:focus,input.inp:focus{outline:none;border-color:var(--text3)}
     <div><div class="logo-text">Director's Cut</div><div class="logo-sub">AI video production studio</div></div>
   </div>
   <div class="topbar-right">
-    <a class="dash-link" href="https://kato8studiosapp.xyz" target="_blank" rel="noopener noreferrer"><i class="ti ti-home"></i> Central Command</a>
+    <a class="dash-link" href="%%HUB_URL%%" target="_blank" rel="noopener noreferrer"><i class="ti ti-home"></i> Central Command</a>
     <a class="dash-link" href="dashboard.html" id="dash-link"><i class="ti ti-chart-bar"></i> Social dashboard</a>
     <div class="status-pill"><div class="status-dot" id="status-dot"></div><span id="status-txt">Ready</span></div>
   </div>
-</div>
-
-<div class="api-notice" id="api-notice">
-  <strong>API key required:</strong> Enter your Anthropic API key below to enable AI features. Get one free at <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a>
 </div>
 
 <div class="nav">
@@ -218,11 +218,7 @@ select.sel:focus,input.inp:focus{outline:none;border-color:var(--text3)}
 
 <!-- SETUP -->
 <div class="panel active" id="panel-setup">
-  <div class="form-row">
-    <label class="lbl">Anthropic API key <span style="color:var(--text3);font-weight:400">(stored in your browser only)</span></label>
-    <input class="inp" type="password" id="apikey" placeholder="sk-ant-..." oninput="saveKey()">
-  </div>
-  <hr class="sep">
+  <div class="honest"><strong>How this works:</strong> Director's Cut plans your edit from the description and transcript you give it. It does not watch the uploaded file, so scene timestamps and scores are suggested targets, not measurements of your footage.</div>
   <div id="dropzone-wrap">
     <div class="dropzone" onclick="document.getElementById('fi').click()">
       <i class="ti ti-video-plus"></i>
@@ -376,12 +372,9 @@ const PLAT_META={
   ig:{label:'Instagram Reels',icon:'ti-brand-instagram',color:'#e1306c',cls:'ig',ar:'9:16',res:'1080×1920',fps:'30',bitrate:'3.5 Mbps',format:'MP4 (H.264)',audio:'AAC 128kbps',maxlen:'15 min',optimal:'7–15 sec or 60 sec',captions:'Auto-captions or burn-in',notes:'Reels get 2–3x more reach than feed posts. Cover frame matters — it shows in your grid. Post before 9am or after 5pm.'}
 };
 
-const S={file:null,ctx:'',genre:'tutorial',selPlats:['yt'],transcript:'',apiKey:'',results:{}};
+const S={file:null,ctx:'',genre:'tutorial',selPlats:['yt'],transcript:'',runId:null,results:{}};
 
 window.addEventListener('DOMContentLoaded',()=>{
-  const k=localStorage.getItem('dc_apikey')||'';
-  if(k){document.getElementById('apikey').value=k;S.apiKey=k;}
-  else document.getElementById('api-notice').classList.add('show');
   // update dash link if on GitHub Pages
   const loc=window.location.href;
   if(loc.includes('github.io')){
@@ -389,8 +382,6 @@ window.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('dash-link').href=base+'dashboard.html';
   }
 });
-
-function saveKey(){S.apiKey=document.getElementById('apikey').value.trim();localStorage.setItem('dc_apikey',S.apiKey);document.getElementById('api-notice').classList.toggle('show',!S.apiKey);}
 function go(p){document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));document.getElementById('panel-'+p).classList.add('active');document.getElementById('nav-'+p).classList.add('active');}
 function markDone(p){document.getElementById('nav-'+p).classList.add('done');}
 function onFile(e){const f=e.target.files[0];if(!f)return;S.file=f;document.getElementById('fn').textContent=f.name;document.getElementById('fs').textContent=(f.size/1048576).toFixed(1)+' MB';document.getElementById('dropzone-wrap').style.display='none';document.getElementById('file-bar-wrap').style.display='block';}
@@ -399,27 +390,46 @@ function setStatus(t,s){document.getElementById('status-txt').textContent=t;docu
 function showToast(m){const t=document.getElementById('toast');t.textContent=m||'Copied!';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800);}
 function togglePlat(p){const c=document.getElementById('pc-'+p);const idx=S.selPlats.indexOf(p);if(idx>-1){if(S.selPlats.length>1){S.selPlats.splice(idx,1);c.classList.remove('selected',p);}}else{S.selPlats.push(p);c.classList.add('selected',p);}}
 
-async function claude(prompt,max){
-  if(!S.apiKey)throw new Error('No API key');
-  max=max||1000;
-  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':S.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:max,messages:[{role:'user',content:prompt}]})});
-  if(!r.ok){const e=await r.json();throw new Error(e.error?.message||'API error');}
-  const d=await r.json();return d.content&&d.content[0]?d.content[0].text:'';
+// All model calls go through the server: it checks the session and role, owns the prompts, and picks the model.
+async function generate(task){
+  const headers=Object.assign({'Content-Type':'application/json'},await window.kato8Auth.headers());
+  const r=await fetch('/api/generate',{method:'POST',headers,body:JSON.stringify({task,ctx:S.ctx,genre:S.genre,platforms:S.selPlats,transcript:S.transcript})});
+  let d={};try{d=await r.json();}catch(e){}
+  if(!r.ok)throw new Error(d.error||('Request failed ('+r.status+')'));
+  return d.text||'';
 }
-function parseJSON(raw){try{return JSON.parse(raw.replace(/```json|```/g,'').trim())}catch(e){return null}}
+
+// Model output is untrusted text. Escape every string once, at the boundary, so nothing downstream can
+// inject markup (the render functions below build HTML). U() reverses it where plain text is needed.
+const ESC={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+const UNESC={'&amp;':'&','&lt;':'<','&gt;':'>','&quot;':'"','&#39;':"'"};
+function E(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>ESC[c]);}
+function U(s){return String(s==null?'':s).replace(/&(?:amp|lt|gt|quot|#39);/g,c=>UNESC[c]);}
+function deepMap(v,fn){
+  if(typeof v==='string')return fn(v);
+  if(Array.isArray(v))return v.map(x=>deepMap(x,fn));
+  if(v&&typeof v==='object'){const o={};for(const k of Object.keys(v)){if(k!=='__proto__')o[k]=deepMap(v[k],fn);}return o;}
+  return v;
+}
+function col(v,d){return typeof v==='string'&&/^#[0-9a-fA-F]{3,8}$/.test(v)?v:d;}
+function parseJSON(raw){try{return deepMap(JSON.parse(raw.replace(/```json|```/g,'').trim()),E)}catch(e){return null}}
 function isStream(){return S.genre.startsWith('stream-');}
 
 async function runAll(){
   S.ctx=document.getElementById('ctx').value.trim();
+  S.runId=null;
   if(!S.ctx){alert('Please add a topic description first.');return;}
-  if(!S.apiKey){alert('Please enter your Anthropic API key.');return;}
   S.genre=document.getElementById('genre').value;
   S.transcript=document.getElementById('manual-tx').value.trim();
   const btn=document.getElementById('run-btn');
   btn.disabled=true;btn.innerHTML='<div class="spinner"></div> Producing...';setStatus('Producing','active');
   try{
-    await Promise.all([runDirector(),runChapters(),runClips(),runPlatforms(),runThumbnail(),runSEO(),runCaptions()]);
-    setStatus('Done','active');btn.innerHTML='<i class="ti ti-check"></i> Production complete — explore tabs above';
+    const names=['director','chapters','clips','platforms','thumbnail','seo','captions'];
+    const res=await Promise.allSettled([runDirector(),runChapters(),runClips(),runPlatforms(),runThumbnail(),runSEO(),runCaptions()]);
+    const failed=res.map((x,i)=>x.status==='rejected'?{n:names[i],e:x.reason}:null).filter(Boolean);
+    if(failed.length===names.length)throw failed[0].e;
+    setStatus(failed.length?'Partly done':'Done','active');btn.innerHTML='<i class="ti ti-check"></i> Production complete — explore tabs above';
+    if(failed.length)alert(failed.length+' section(s) could not be generated ('+failed.map(f=>f.n).join(', ')+'). The rest are ready; run again to retry. '+(failed[0].e&&failed[0].e.message?'Reason: '+failed[0].e.message:''));
     saveRunToStorage();
     setTimeout(()=>go('director'),700);
   }catch(err){
@@ -429,11 +439,22 @@ async function runAll(){
 }
 
 function saveRunToStorage(){
-  const run={timestamp:Date.now(),title:S.ctx.slice(0,80),platforms:S.selPlats,genre:S.genre,results:S.results};
-  const runs=JSON.parse(localStorage.getItem('dc_runs')||'[]');
+  // Idempotent per production run: saving again (e.g. via "Send to dashboard") updates the same entry.
+  S.runId=S.runId||'run_'+Date.now();
+  const title=S.ctx.slice(0,80);
+  const run={id:S.runId,timestamp:Date.now(),title,platforms:S.selPlats,genre:S.genre,results:S.results};
+  const all=JSON.parse(localStorage.getItem('dc_runs')||'[]');
+  const old=all.find(r=>r.id===S.runId);if(old&&old.status)run.status=old.status;
+  const runs=all.filter(r=>r.id!==S.runId);
   runs.unshift(run);
   localStorage.setItem('dc_runs',JSON.stringify(runs.slice(0,20)));
   localStorage.setItem('dc_latest',JSON.stringify(run));
+  // One manual-publish queue item per selected platform; published items are left alone.
+  let queue=JSON.parse(localStorage.getItem('dc_queue')||'[]');
+  const done=queue.filter(q=>q.vid_id===S.runId&&q.status==='published');
+  queue=queue.filter(q=>q.vid_id!==S.runId);
+  S.selPlats.forEach(pl=>{const d=done.find(q=>q.platform===pl);queue.push(d||{id:S.runId+'_'+pl,vid_id:S.runId,platform:pl,title,created:Date.now(),status:'queued'});});
+  localStorage.setItem('dc_queue',JSON.stringify(queue.slice(-60)));
 }
 
 function sendToDash(){
@@ -442,68 +463,34 @@ function sendToDash(){
   setTimeout(()=>{window.location.href=document.getElementById('dash-link').href;},900);
 }
 
+function need(d,what){if(!d)throw new Error('The AI answer for '+what+' could not be read. Run again to retry.');return d;}
+
 async function runDirector(){
-  const txH=S.transcript?'\n\nTranscript excerpt:\n'+S.transcript.slice(0,700):'';
-  const sCtx=isStream()?`\nThis is a LIVE STREAM VOD (${S.genre.replace('stream-','')}). Focus on trimming dead air, highlight moments, and restructuring for replay viewers.`:'';
-  const platList=S.selPlats.map(p=>PLAT_META[p]?.label).join(', ');
-  const raw=await claude(`You are a seasoned film director and senior video editor with 20+ years experience.${sCtx}
-Video: "${S.ctx}" | Genre: ${S.genre} | Platforms: ${platList}${txH}
-Return ONLY valid JSON:
-{"director_note":"2-3 sentence opinionated director's note in first person","score":7,"score_label":"Solid rough cut","estimated_duration":"38 min","recommended_duration":"22 min","cuts_count":8,"stream_specific_tips":${isStream()?'"3-4 stream VOD editing tips"':'null'},"scenes":[{"timestamp":"00:00-01:30","action":"KEEP","label":"Cold open","note":"Strong hook.","dot":"keep"},{"timestamp":"01:30-04:00","action":"TRIM","label":"Intro ramble","note":"Cut to 90s.","dot":"trim"},{"timestamp":"04:00-06:30","action":"CUT","label":"Dead air","note":"Full cut.","dot":"cut"}],"narrative_notes":"2-3 paragraphs on story structure.","retention_notes":"2-3 paragraphs on pacing and retention."}`,900);
-  const d=parseJSON(raw);if(!d)return;S.results.director=d;renderDirector(d);markDone('director');
+  const d=need(parseJSON(await generate('director')),'Director');
+  S.results.director=d;renderDirector(d);markDone('director');
 }
-
 async function runChapters(){
-  const txH=S.transcript?'\n\nTranscript:\n'+S.transcript.slice(0,600):'';
-  const raw=await claude(`YouTube chapter expert. Video: "${S.ctx}" | Genre: ${S.genre}${txH}
-Return ONLY valid JSON: {"chapters":[{"timestamp":"0:00","title":"Intro","description":"What this covers"},{"timestamp":"2:30","title":"Section","description":"Details"}]}
-Generate 6-10 chapters starting at 0:00.`,600);
-  const d=parseJSON(raw);if(!d||!d.chapters)return;S.results.chapters=d.chapters;renderChapters(d.chapters);markDone('chapters');
+  const d=need(parseJSON(await generate('chapters')),'Chapters');if(!d.chapters)throw new Error('No chapters came back.');
+  S.results.chapters=d.chapters;renderChapters(d.chapters);markDone('chapters');
 }
-
 async function runClips(){
-  const txH=S.transcript?'\n\nTranscript:\n'+S.transcript.slice(0,600):'';
-  const platList=S.selPlats.map(p=>PLAT_META[p]?.label).join(', ');
-  const raw=await claude(`Short-form content strategist. Target platforms: ${platList}.
-Video: "${S.ctx}"${txH}
-Return ONLY valid JSON: {"clips":[{"timestamp":"12:30-15:45","duration":"3m15s","hook":"First 3 sec hook","why":"Why this works","platforms":["TikTok","Reels"],"viral_score":8,"edit_note":"Specific cut instruction"}]}
-Identify 4-6 clips targeting the selected platforms.`,800);
-  const d=parseJSON(raw);if(!d||!d.clips)return;S.results.clips=d.clips;renderClips(d.clips);markDone('clips');
+  const d=need(parseJSON(await generate('clips')),'Clips');if(!d.clips)throw new Error('No clips came back.');
+  S.results.clips=d.clips;renderClips(d.clips);markDone('clips');
 }
-
 async function runPlatforms(){
-  const results={};
-  const platLabels=S.selPlats.map(p=>PLAT_META[p]?.label).join(', ');
-  const raw=await claude(`You are a platform-specific video editor. For each platform, provide tailored editing instructions.
-Video: "${S.ctx}" | Genre: ${S.genre} | Selected platforms: ${platLabels}
-Return ONLY valid JSON where keys are platform codes from [yt,tt,ig] that were selected (${S.selPlats.join(',')}):
-{
-  ${S.selPlats.map(p=>`"${p}":{"hook":"Opening 3-5 second hook script for this platform","cut_style":"Editing style recommendation specific to this platform","music_tip":"Music/audio recommendation","caption_style":"Caption style recommendation","cta":"Call to action text optimized for this platform","post_time":"Best time to post","edit_checklist":["check 1","check 2","check 3","check 4","check 5"]}`).join(',\n  ')}
-}`,900);
-  const d=parseJSON(raw);if(!d)return;S.results.platforms=d;renderPlatforms(d);markDone('platforms');
+  const d=need(parseJSON(await generate('platforms')),'Platforms');
+  S.results.platforms=d;renderPlatforms(d);markDone('platforms');
 }
-
 async function runThumbnail(){
-  const platList=S.selPlats.map(p=>PLAT_META[p]?.label).join(', ');
-  const raw=await claude(`YouTube thumbnail designer. Platforms: ${platList}.
-Video: "${S.ctx}" | Genre: ${S.genre}
-Return ONLY valid JSON: {"concepts":[{"name":"The Contrast","style":"Bold text over split","headline":"TITLE TEXT","subtext":"optional","bg_color":"#1a1a2e","accent_color":"#FF6B35","text_color":"#FFFFFF","layout":"left-text right-image","subject":"visual subject","why_it_works":"CTR psychology"}]}
-Make 3 distinct concepts.`,700);
-  const d=parseJSON(raw);if(!d||!d.concepts)return;S.results.thumbnails=d.concepts;renderThumbnails(d.concepts);markDone('thumbnail');
+  const d=need(parseJSON(await generate('thumbnail')),'Thumbnails');if(!d.concepts)throw new Error('No thumbnail concepts came back.');
+  S.results.thumbnails=d.concepts;renderThumbnails(d.concepts);markDone('thumbnail');
 }
-
 async function runSEO(){
-  const txH=S.transcript?'\n\nTranscript:\n'+S.transcript.slice(0,400):'';
-  const platList=S.selPlats.map(p=>PLAT_META[p]?.label).join(', ');
-  const raw=await claude(`YouTube SEO expert. Platforms: ${platList}.
-Video: "${S.ctx}" | Genre: ${S.genre}${txH}
-Return ONLY valid JSON: {"yt_titles":[{"title":"A","why":"why"},{"title":"B","why":"why"},{"title":"C","why":"why"}],"description":"Full description 200-250 words with [CHAPTERS] placeholder","tags":["t1","t2","t3","t4","t5","t6","t7","t8","t9","t10","t11","t12"],"hashtags":["#h1","#h2","#h3","#h4","#h5"],"tiktok_caption":"Caption under 130 chars","tiktok_hashtags":["#tt1","#tt2","#tt3","#tt4","#tt5"],"ig_caption":"Instagram caption with emojis under 150 chars","ig_hashtags":["#ig1","#ig2","#ig3","#ig4","#ig5"]}`,800);
-  const d=parseJSON(raw);if(!d)return;S.results.seo=d;renderSEO(d);markDone('seo');
+  const d=need(parseJSON(await generate('seo')),'SEO');
+  S.results.seo=d;renderSEO(d);markDone('seo');
 }
-
 async function runCaptions(){
-  const base=S.transcript||`[00:00] Welcome. Today we're covering ${S.ctx}.\n[00:30] Let's start with the fundamentals.\n[01:15] Here's the first key point.\n[02:00] Moving on.\n[03:30] This is where things get interesting.\n[05:00] Let me show you exactly how this works.\n[07:00] Common mistakes to avoid.\n[09:00] My top recommendations.\n[11:00] Quick recap.\n[12:00] Thanks for watching.`;
-  const raw=await claude(`Convert to SRT subtitle format. Max 2 lines per entry, max 42 chars per line. Return ONLY the SRT content.\n\n${base.slice(0,800)}`,700);
+  const raw=await generate('captions');
   S.results.captions=raw;renderCaptions(raw);markDone('captions');
 }
 
@@ -515,7 +502,7 @@ function renderDirector(d){
   if(d.stream_specific_tips&&isStream())document.getElementById('stream-tips-wrap').innerHTML=`<div class="card"><div class="card-header"><span class="card-title"><span class="stream-badge"><i class="ti ti-broadcast" style="font-size:11px"></i> LIVE</span> Stream VOD tips</span></div><div style="font-size:13px;line-height:1.65;color:var(--text2)">${d.stream_specific_tips}</div></div>`;
   let tlH='<div class="tl-line"></div>',tlT='';
   (d.scenes||[]).forEach(sc=>{const dot=sc.dot||'keep';tlH+=`<div class="tl-item"><div class="tl-dot ${dot}"></div><div class="tl-tc">${sc.timestamp||''}</div><div class="tl-label"><span class="tl-title">${sc.label||''}</span><span class="badge ${dot==='cut'?'badge-red':dot==='trim'?'badge-amber':'badge-green'}">${sc.action||dot}</span></div><div class="tl-note">${sc.note||''}</div></div>`;tlT+=`[${sc.timestamp}] ${sc.action} — ${sc.label}: ${sc.note}\n`;});
-  document.getElementById('tl-wrap').innerHTML=tlH;document.getElementById('tl-copy').value=tlT;
+  document.getElementById('tl-wrap').innerHTML=tlH;document.getElementById('tl-copy').value=U(tlT);
   if(d.narrative_notes)document.getElementById('narrative-notes').innerHTML=`<p>${d.narrative_notes}</p>`;
   if(d.retention_notes)document.getElementById('retention-notes').innerHTML=`<p>${d.retention_notes}</p>`;
 }
@@ -524,7 +511,7 @@ function renderChapters(chapters){
   document.getElementById('chapters-empty').style.display='none';
   document.getElementById('chapters-content').style.display='block';
   let h='',c='';chapters.forEach(ch=>{h+=`<div class="chap-item"><div class="chap-tc">${ch.timestamp}</div><div><div class="chap-title">${ch.title}</div><div class="chap-desc">${ch.description||''}</div></div></div>`;c+=`${ch.timestamp} ${ch.title}\n`;});
-  document.getElementById('chap-list').innerHTML=h;document.getElementById('chap-copy').value=c.trim();
+  document.getElementById('chap-list').innerHTML=h;document.getElementById('chap-copy').value=U(c.trim());
 }
 
 function renderClips(clips){
@@ -558,9 +545,9 @@ function renderPlatforms(data){
         <div class="spec-row"><span class="spec-key">Sweet spot</span><span class="spec-val">${m.optimal}</span></div>
         <button class="dl-btn" onclick="dlSpec('${p}')"><i class="ti ti-download"></i> Download ${m.label} spec sheet (.txt)</button>
       </div>
-      ${ai.hook?`<div class="card"><div class="card-header"><span class="card-title">Platform hook (first 3–5 sec)</span><button class="btn-sm" onclick="cpText('${(ai.hook||'').replace(/'/g,"\\'")}')"><i class="ti ti-copy"></i></button></div><p style="font-size:14px;font-weight:500;line-height:1.5">"${ai.hook}"</p></div>`:''}
+      ${ai.hook?`<div class="card"><div class="card-header"><span class="card-title">Platform hook (first 3–5 sec)</span><button class="btn-sm" data-t="${ai.hook||''}" onclick="cpText(this.dataset.t)"><i class="ti ti-copy"></i></button></div><p style="font-size:14px;font-weight:500;line-height:1.5">"${ai.hook}"</p></div>`:''}
       ${ai.cut_style?`<div class="card"><div class="card-header"><span class="card-title">Editing style for ${m.label}</span></div><p style="font-size:14px;line-height:1.65">${ai.cut_style}</p></div>`:''}
-      ${ai.cta?`<div class="card"><div class="card-header"><span class="card-title">Call to action</span><button class="btn-sm" onclick="cpText('${(ai.cta||'').replace(/'/g,"\\'")}')"><i class="ti ti-copy"></i></button></div><p style="font-size:14px">${ai.cta}</p></div>`:''}
+      ${ai.cta?`<div class="card"><div class="card-header"><span class="card-title">Call to action</span><button class="btn-sm" data-t="${ai.cta||''}" onclick="cpText(this.dataset.t)"><i class="ti ti-copy"></i></button></div><p style="font-size:14px">${ai.cta}</p></div>`:''}
       ${checks?`<div class="card"><div class="card-header"><span class="card-title">Pre-upload checklist for ${m.label}</span></div><ul style="list-style:none;padding:0">${checks}</ul></div>`:''}
       <div class="card"><div class="card-header"><span class="card-title">Platform notes</span></div><p style="font-size:13px;line-height:1.65;color:var(--text2)">${m.notes}</p>${ai.post_time?`<p style="font-size:13px;margin-top:8px"><strong>Best post time:</strong> ${ai.post_time}</p>`:''}</div>
     </div>`;
@@ -575,7 +562,7 @@ function switchPlatTab(p){
 }
 
 function dlSpec(p){
-  const m=PLAT_META[p];const ai=(S.results.platforms||{})[p]||{};
+  const m=PLAT_META[p];const ai=deepMap((S.results.platforms||{})[p]||{},U);
   let txt=`${m.label.toUpperCase()} EXPORT SPEC SHEET\nGenerated by Director's Cut\n\nVideo: ${S.ctx}\n\n`;
   txt+=`TECHNICAL SPECS\n${'='.repeat(40)}\nAspect ratio: ${m.ar}\nResolution: ${m.res}\nFrame rate: ${m.fps} fps\nBitrate: ${m.bitrate}\nFormat: ${m.format}\nAudio: ${m.audio}\nMax length: ${m.maxlen}\nOptimal length: ${m.optimal}\nCaptions: ${m.captions}\n\n`;
   if(ai.hook)txt+=`PLATFORM HOOK\n${'='.repeat(40)}\n"${ai.hook}"\n\n`;
@@ -592,7 +579,7 @@ function dlSpec(p){
 function renderThumbnails(concepts){
   document.getElementById('thumb-empty').style.display='none';
   document.getElementById('thumb-content').style.display='block';
-  let h='';concepts.forEach((c,i)=>{const bg=c.bg_color||'#1a1a2e',ac=c.accent_color||'#FF6B35',tc=c.text_color||'#FFF';h+=`<div class="card"><div class="card-header"><span class="card-title">Concept ${i+1}: ${c.name||''}</span></div><div style="background:${bg};border-radius:var(--radius);aspect-ratio:16/9;display:flex;flex-direction:column;justify-content:flex-end;padding:1.5rem;margin-bottom:12px;min-height:160px"><div style="font-size:clamp(16px,3vw,26px);font-weight:700;color:${tc};line-height:1.1;max-width:65%;margin-bottom:8px">${c.headline||''}</div>${c.subtext?`<div style="font-size:13px;color:${ac};font-weight:500">${c.subtext}</div>`:''}<div style="margin-top:10px;padding:3px 10px;background:${ac};border-radius:4px;font-size:11px;font-weight:600;color:${tc};display:inline-block">${c.style||''}</div></div><p style="font-size:13px;color:var(--text2);line-height:1.55;margin-bottom:5px">${c.why_it_works||''}</p><p style="font-size:12px;color:var(--text3)"><strong>Visual:</strong> ${c.subject||''}</p></div>`;});
+  let h='';concepts.forEach((c,i)=>{const bg=col(c.bg_color,'#1a1a2e'),ac=col(c.accent_color,'#FF6B35'),tc=col(c.text_color,'#FFFFFF');h+=`<div class="card"><div class="card-header"><span class="card-title">Concept ${i+1}: ${c.name||''}</span></div><div style="background:${bg};border-radius:var(--radius);aspect-ratio:16/9;display:flex;flex-direction:column;justify-content:flex-end;padding:1.5rem;margin-bottom:12px;min-height:160px"><div style="font-size:clamp(16px,3vw,26px);font-weight:700;color:${tc};line-height:1.1;max-width:65%;margin-bottom:8px">${c.headline||''}</div>${c.subtext?`<div style="font-size:13px;color:${ac};font-weight:500">${c.subtext}</div>`:''}<div style="margin-top:10px;padding:3px 10px;background:${ac};border-radius:4px;font-size:11px;font-weight:600;color:${tc};display:inline-block">${c.style||''}</div></div><p style="font-size:13px;color:var(--text2);line-height:1.55;margin-bottom:5px">${c.why_it_works||''}</p><p style="font-size:12px;color:var(--text3)"><strong>Visual:</strong> ${c.subject||''}</p></div>`;});
   document.getElementById('thumb-concepts').innerHTML=h;
 }
 
@@ -600,11 +587,11 @@ function renderSEO(d){
   document.getElementById('seo-empty').style.display='none';
   document.getElementById('seo-content').style.display='block';
   let h='';
-  if(d.yt_titles&&S.selPlats.includes('yt')){h+=`<div class="card"><div class="card-header"><span class="card-title"><i class="ti ti-brand-youtube" style="color:#ff0000;font-size:14px"></i> YouTube titles</span></div>`;d.yt_titles.forEach(t=>{h+=`<div class="title-opt"><div style="flex:1"><div class="title-str">${t.title}</div><div class="title-why">${t.why||''}</div></div><button class="btn-sm" onclick="cpText('${(t.title||'').replace(/'/g,"\\'")}')"><i class="ti ti-copy"></i></button></div>`;});h+=`</div>`;}
+  if(d.yt_titles&&S.selPlats.includes('yt')){h+=`<div class="card"><div class="card-header"><span class="card-title"><i class="ti ti-brand-youtube" style="color:#ff0000;font-size:14px"></i> YouTube titles</span></div>`;d.yt_titles.forEach(t=>{h+=`<div class="title-opt"><div style="flex:1"><div class="title-str">${t.title}</div><div class="title-why">${t.why||''}</div></div><button class="btn-sm" data-t="${t.title||''}" onclick="cpText(this.dataset.t)"><i class="ti ti-copy"></i></button></div>`;});h+=`</div>`;}
   if(d.description&&S.selPlats.includes('yt')){h+=`<div class="card"><div class="card-header"><span class="card-title">YouTube description</span><button class="btn-sm" onclick="cpText(document.getElementById('yt-desc').textContent)"><i class="ti ti-copy"></i> Copy</button></div><p id="yt-desc" style="font-size:13px;line-height:1.7;white-space:pre-wrap">${d.description}</p></div>`;}
   if(d.tags){h+=`<div class="card"><div class="card-header"><span class="card-title">Tags & hashtags</span></div><div class="tags">${d.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>${d.hashtags?'<div class="tags" style="margin-top:6px">'+d.hashtags.map(t=>`<span class="tag ht">${t}</span>`).join('')+'</div>':''}</div>`;}
-  if(d.tiktok_caption&&S.selPlats.includes('tt')){h+=`<div class="card"><div class="card-header"><span class="card-title"><i class="ti ti-brand-tiktok" style="font-size:14px"></i> TikTok caption</span><button class="btn-sm" onclick="cpText('${(d.tiktok_caption||'').replace(/'/g,"\\'")}')"><i class="ti ti-copy"></i></button></div><p style="font-size:13px;font-weight:500;margin-bottom:10px">${d.tiktok_caption}</p>${d.tiktok_hashtags?'<div class="tags">'+d.tiktok_hashtags.map(t=>`<span class="tag ht">${t}</span>`).join('')+'</div>':''}</div>`;}
-  if(d.ig_caption&&S.selPlats.includes('ig')){h+=`<div class="card"><div class="card-header"><span class="card-title"><i class="ti ti-brand-instagram" style="color:#e1306c;font-size:14px"></i> Instagram caption</span><button class="btn-sm" onclick="cpText('${(d.ig_caption||'').replace(/'/g,"\\'")}')"><i class="ti ti-copy"></i></button></div><p style="font-size:13px;font-weight:500;margin-bottom:10px">${d.ig_caption}</p>${d.ig_hashtags?'<div class="tags">'+d.ig_hashtags.map(t=>`<span class="tag ht">${t}</span>`).join('')+'</div>':''}</div>`;}
+  if(d.tiktok_caption&&S.selPlats.includes('tt')){h+=`<div class="card"><div class="card-header"><span class="card-title"><i class="ti ti-brand-tiktok" style="font-size:14px"></i> TikTok caption</span><button class="btn-sm" data-t="${d.tiktok_caption||''}" onclick="cpText(this.dataset.t)"><i class="ti ti-copy"></i></button></div><p style="font-size:13px;font-weight:500;margin-bottom:10px">${d.tiktok_caption}</p>${d.tiktok_hashtags?'<div class="tags">'+d.tiktok_hashtags.map(t=>`<span class="tag ht">${t}</span>`).join('')+'</div>':''}</div>`;}
+  if(d.ig_caption&&S.selPlats.includes('ig')){h+=`<div class="card"><div class="card-header"><span class="card-title"><i class="ti ti-brand-instagram" style="color:#e1306c;font-size:14px"></i> Instagram caption</span><button class="btn-sm" data-t="${d.ig_caption||''}" onclick="cpText(this.dataset.t)"><i class="ti ti-copy"></i></button></div><p style="font-size:13px;font-weight:500;margin-bottom:10px">${d.ig_caption}</p>${d.ig_hashtags?'<div class="tags">'+d.ig_hashtags.map(t=>`<span class="tag ht">${t}</span>`).join('')+'</div>':''}</div>`;}
   document.getElementById('seo-results').innerHTML=h;
 }
 
@@ -614,36 +601,6 @@ function copyEl(id){navigator.clipboard.writeText(document.getElementById(id).te
 function cpText(t){navigator.clipboard.writeText(t);showToast();}
 function dlSRT(){const c=document.getElementById('srt-pre').textContent;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:'text/plain'}));a.download='captions.srt';a.click();}
 
-// ─── Clerk auth ───────────────────────────────────────────────────────────────
-const CLERK_KEY='REPLACE_WITH_YOUR_CLERK_PUBLISHABLE_KEY';
-const ALLOWED_ROLES=['super_admin','social_media_manager'];
-
-async function initAuth(){
-  const gate=document.getElementById('auth-gate');
-  try{await window.Clerk.load({publishableKey:CLERK_KEY});}
-  catch(e){gate.style.display='none';return;}
-
-  window.Clerk.mountSignIn(document.getElementById('clerk-sign-in'),{routing:'hash'});
-
-  function showState(state){
-    document.getElementById('clerk-sign-in').style.display=state==='signin'?'block':'none';
-    document.getElementById('clerk-pending').style.display=state==='pending'?'block':'none';
-    document.getElementById('clerk-restricted').style.display=state==='restricted'?'block':'none';
-  }
-  function checkUser(){
-    const user=window.Clerk.user;
-    if(!user){gate.style.display='flex';showState('signin');return;}
-    const role=user.publicMetadata?.role;
-    if(!role){gate.style.display='flex';showState('pending');}
-    else if(!ALLOWED_ROLES.includes(role)){gate.style.display='flex';showState('restricted');}
-    else{gate.style.display='none';}
-  }
-  window.Clerk.addListener(()=>checkUser());
-  checkUser();
-  document.getElementById('signout-pending').addEventListener('click',()=>window.Clerk.signOut());
-  document.getElementById('signout-restricted').addEventListener('click',()=>window.Clerk.signOut());
-}
-initAuth();
 </script>
 </body>
 </html>
