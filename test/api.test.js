@@ -19,7 +19,7 @@ const deny = async (_req, res) => { res.status(403).json({ error: 'Forbidden' })
 const okAi = text => async (body, opts) => { okAi.calls.push({ body, opts }); return { status: 200, data: { content: [{ type: 'text', text }] } } }
 okAi.calls = []
 
-beforeEach(() => { okAi.calls.length = 0; delete process.env.KATO8_DEMO; delete process.env.CLERK_SECRET_KEY })
+beforeEach(() => { okAi.calls.length = 0; delete process.env.KATO8_DEMO; delete process.env.VITE_KATO8_DEMO; delete process.env.CLERK_SECRET_KEY })
 
 test('only the roles the suite registry lists for this tool may call it', () => {
   assert.deepEqual([...VIDEO_ROLES].sort(), ['social_media_manager', 'super_admin'])
